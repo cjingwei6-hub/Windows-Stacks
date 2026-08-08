@@ -1,0 +1,19 @@
+## Visual Studio / C# build output
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+
+## JetBrains Rider
+.idea/
+
+## Publish output (single-file exe is shipped via GitHub Releases, not committed)
+publish/
+release/
+
+## OS / editor noise
+Thumbs.db
+Desktop.ini
+.DS_Store

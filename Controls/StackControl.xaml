@@ -1,0 +1,130 @@
+<UserControl x:Class="Stacks.Controls.StackControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             x:Name="RootControl"
+             MouseLeftButtonDown="OnMouseLeftButtonDown"
+             MouseLeftButtonUp="OnMouseLeftButtonUp"
+             MouseEnter="OnMouseEnter"
+             MouseLeave="OnMouseLeave"
+             MouseMove="OnMouseMove"
+             AllowDrop="True"
+             Drop="OnDrop"
+             DragEnter="OnDragEnter"
+             Cursor="Hand">
+
+    <UserControl.Resources>
+        <DropShadowEffect x:Key="CardShadow" BlurRadius="20" ShadowDepth="4" Opacity="0.35" Color="Black"/>
+        <DropShadowEffect x:Key="BigShadow" BlurRadius="30" ShadowDepth="8" Opacity="0.45" Color="Black"/>
+
+        <!-- Thin translucent scrollbar that fits the dark acrylic card -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="MinWidth" Value="8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True"
+                                   Value="{TemplateBinding Value}"
+                                   Minimum="{TemplateBinding Minimum}"
+                                   Maximum="{TemplateBinding Maximum}"
+                                   ViewportSize="{TemplateBinding ViewportSize}">
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="#66FFFFFF"
+                                                        CornerRadius="4"
+                                                        Margin="1"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- Collapsed View -->
+        <Border x:Name="CollapsedView"
+                CornerRadius="14"
+                Background="#991E1E24"
+                BorderBrush="#40FFFFFF" BorderThickness="1"
+                Padding="6,4"
+                RenderOptions.BitmapScalingMode="HighQuality">
+            <StackPanel>
+                <!-- Drag handle  -->
+                <Border Width="28" Height="4" CornerRadius="2"
+                        Background="#50FFFFFF"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,4"
+                        Cursor="SizeAll"/>
+                <!-- Icon pile (horizontal strip) -->
+                <StackPanel x:Name="IconPilePanel" Orientation="Horizontal"
+                            HorizontalAlignment="Center" Margin="0,0,0,6">
+                    <!-- Icons added in code-behind -->
+                </StackPanel>
+                <!-- Group name -->
+                <TextBlock x:Name="GroupNameLabel"
+                           Text="Stacks" Foreground="#FFFFFFFF"
+                           FontFamily="Microsoft YaHei" FontSize="10" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           MaxWidth="140"/>
+                <TextBlock x:Name="GroupCountLabel"
+                           Text="0 项" Foreground="#99B4B4B8"
+                           FontFamily="Microsoft YaHei" FontSize="8"
+                           HorizontalAlignment="Center" Margin="0,1,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Expanded View -->
+        <Border x:Name="ExpandedView"
+                CornerRadius="16"
+                Background="#B31E1E24"
+                BorderBrush="#55FFFFFF" BorderThickness="1"
+                Padding="16,14"
+                Visibility="Collapsed"
+                Effect="{StaticResource BigShadow}"
+                RenderOptions.BitmapScalingMode="HighQuality">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <TextBlock x:Name="ExpandedTitle" Grid.Row="0"
+                           Text="Stacks" Foreground="#99FFFFFF"
+                           FontFamily="Microsoft YaHei" FontSize="10" FontWeight="SemiBold"
+                           Margin="0,0,0,10"/>
+
+                <!-- Scrollable file items: scrollbar appears only when content
+                     is taller than the panel (panel height is capped to the
+                     available screen height in RenderExpandedItems). -->
+                <ScrollViewer x:Name="ExpandedScroller" Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,0,4,0">
+                    <ItemsControl x:Name="ExpandedItems"
+                                  IsHitTestVisible="True">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel x:Name="GridPanel" Orientation="Horizontal"
+                                           HorizontalAlignment="Left"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

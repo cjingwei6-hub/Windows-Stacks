@@ -1,0 +1,40 @@
+﻿<Window x:Class="Stacks.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Stacks.Controls"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip"
+        Topmost="False"
+        Title="Stacks"
+        WindowStartupLocation="Manual"
+        Loaded="OnLoaded"
+        Closing="OnClosing"
+        SizeChanged="OnSizeChanged"
+        AllowDrop="True"
+        Drop="OnWindowDrop"
+        DragEnter="OnWindowDragEnter">
+
+    <Window.Resources>
+        <Style x:Key="TrayStyle" TargetType="MenuItem">
+            <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+    </Window.Resources>
+
+    <!-- Desktop overlay canvas. WM_NCHITTEST in code-behind handles click-through:
+         cursor over a StackControl → normal WPF hit-test; cursor over empty area →
+         HTTRANSPARENT so clicks fall through to native desktop icons below. -->
+    <Canvas x:Name="DesktopCanvas"
+            Background="Transparent"
+            AllowDrop="True"
+            Drop="OnWindowDrop"
+            DragEnter="OnWindowDragEnter">
+
+        <!-- Stacks are added dynamically in code-behind -->
+
+    </Canvas>
+</Window>
