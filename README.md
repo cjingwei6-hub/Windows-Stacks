@@ -44,4 +44,4 @@ dotnet publish -c Release -r win-x64 --no-self-contained -p:PublishSingleFile=tr
 
 ## 许可证
 
-[MIT](LICENSE) © cjingwei6
+[MIT](LICENSE) © cjingwei6  //https://windows-stacks.pages.dev/#features
