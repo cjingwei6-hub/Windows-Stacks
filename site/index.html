@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stacks — 把桌面文件自动归堆的 Windows 工具</title>
+  <meta name="description" content="macOS 桌面叠放体验搬到 Windows。按类型、日期自动分组，单击选中、双击打开，绝不移动你的真实文件。免费开源。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ── Nav ── -->
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#top" aria-label="Stacks 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Stacks</span>
+      </a>
+      <nav class="nav-links" aria-label="主导航">
+        <a href="#features">功能</a>
+        <a href="#how">原理</a>
+        <a href="#opensource">开源</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="https://github.com/cjingwei6-hub/Windows-Stacks" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          GitHub
+        </a>
+        <a class="btn btn-primary" href="https://github.com/cjingwei6-hub/Windows-Stacks/releases/tag/v1.0.0">下载</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ── Hero ── -->
+    <section class="hero">
+      <div class="hero-copy reveal">
+        <span class="eyebrow">Windows 桌面叠放 · 开源</span>
+        <h1>桌面文件，<br />自动归成一堆堆。</h1>
+        <p class="lead">
+          把杂乱的桌面文件按<strong>类型</strong>或<strong>日期</strong>自动分组成一个个可展开的「叠放堆」。
+          单击选中、双击打开——所有操作都在原生桌面之上完成，<strong>绝不移动你的真实文件</strong>。
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="https://github.com/cjingwei6-hub/Windows-Stacks/releases/tag/v1.0.0">
+            下载 Stacks
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 1a.75.75 0 0 1 .75.75v6.69l2.97-2.97a.75.75 0 1 1 1.06 1.06L8.53 10.03a.75.75 0 0 1-1.06 0L3.22 6.53a.75.75 0 0 1 1.06-1.06l2.97 2.97V1.75A.75.75 0 0 1 8 1Zm-5 11a.75.75 0 0 1 .75.75v.5h10.5v-.5a.75.75 0 0 1 1.5 0v.5A1.25 1.25 0 0 1 13.25 15H2.75A1.25 1.25 0 0 1 1.5 13.75v-.5a.75.75 0 0 1 1.5 0Z"/></svg>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/cjingwei6-hub/Windows-Stacks" target="_blank" rel="noopener">在 GitHub 查看</a>
+        </div>
+        <ul class="trust">
+          <li><span class="dot"></span>免费 · 开源 MIT</li>
+          <li><span class="dot"></span>单文件 exe，无依赖</li>
+          <li><span class="dot"></span>.NET 6 / WPF</li>
+        </ul>
+      </div>
+
+      <!-- Hero visual: a mockup of stacked piles -->
+      <div class="hero-visual reveal" aria-hidden="true">
+        <div class="desk">
+          <div class="pile pile-a" style="--d:0ms">
+            <div class="pile-head"><span class="ico ico-img"></span>图片 <em>12</em></div>
+            <div class="pile-body">
+              <span class="chip"></span><span class="chip"></span><span class="chip"></span>
+            </div>
+          </div>
+          <div class="pile pile-b" style="--d:80ms">
+            <div class="pile-head"><span class="ico ico-doc"></span>文档 <em>5</em></div>
+            <div class="pile-body">
+              <span class="chip"></span><span class="chip"></span>
+            </div>
+          </div>
+          <div class="pile pile-c" style="--d:160ms">
+            <div class="pile-head"><span class="ico ico-vid"></span>视频 <em>3</em></div>
+            <div class="pile-body"><span class="chip"></span></div>
+          </div>
+          <div class="pile pile-d" style="--d:240ms">
+            <div class="pile-head"><span class="ico ico-zip"></span>压缩包 <em>8</em></div>
+            <div class="pile-body">
+              <span class="chip"></span><span class="chip"></span><span class="chip"></span>
+            </div>
+          </div>
+          <div class="cursor"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Features ── -->
+    <section class="section" id="features">
+      <div class="section-head reveal">
+        <h2>桌面该有的样子</h2>
+        <p>不是又一个文件管理器，而是让你的桌面自己收拾干净。</p>
+      </div>
+      <div class="grid">
+        <article class="card reveal">
+          <div class="card-ico">🗂️</div>
+          <h3>智能分组</h3>
+          <p>按文件类型（图片 / 视频 / 文档 / 代码…）或日期（今天 / 本周 / 本月…）自动归类，130+ 扩展名覆盖。</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-ico">👆</div>
+          <h3>单击选中 · 双击打开</h3>
+          <p>和 macOS 一致的交互手感。点一下高亮选中，再点一下直接打开，原生桌面图标照常可点。</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-ico">🖱️</div>
+          <h3>拖拽排列</h3>
+          <p>叠放堆可自由拖动，松手自动吸附到网格，像摆弄真实桌面图标一样顺手。</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-ico">🎴</div>
+          <h3>网格 / 扇形布局</h3>
+          <p>展开方式随你切，网格整齐、扇形灵动，总有一款顺眼。</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-ico">⚡</div>
+          <h3>秒开不卡顿</h3>
+          <p>图标异步加载，启动瞬间完成，再也不会有「点了没反应」的死等。</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-ico">🚀</div>
+          <h3>开机自启</h3>
+          <p>注册表一键启用，登录后桌面自动归位，开机即清爽。</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── How it works ── -->
+    <section class="section section-alt" id="how">
+      <div class="section-head reveal">
+        <h2>怎么做到的</h2>
+        <p>一层透明叠放层，叠在你的原生桌面之上。</p>
+      </div>
+      <ol class="steps">
+        <li class="reveal"><span class="step-n">1</span><h3>全屏透明叠加</h3><p>应用开一个全屏透明窗口自绘叠放堆，原生图标层保持共存、照常可点。</p></li>
+        <li class="reveal"><span class="step-n">2</span><h3>Win32 点击穿透</h3><p>用 <code>WM_NCHITTEST</code> 消息精确判断：点在堆上就拦截，点在空白就穿透到桌面。</p></li>
+        <li class="reveal"><span class="step-n">3</span><h3>虚拟分组，零改动</h3><p>分组只是「视图」，文件原封不动待在原处——误删？不存在的。</p></li>
+      </ol>
+    </section>
+
+    <!-- ── Open source band ── -->
+    <section class="section" id="opensource">
+      <div class="oss reveal">
+        <div class="oss-text">
+          <h2>开源，built in the open</h2>
+          <p>整套代码、构建脚本、发布流程全部公开。想加功能、修 bug、学实现，随便来。</p>
+          <a class="btn btn-primary" href="https://github.com/cjingwei6-hub/Windows-Stacks">去 GitHub 逛逛</a>
+        </div>
+        <div class="oss-stats">
+          <div class="stat"><span class="stat-num">MIT</span><span class="stat-label">宽松开源协议</span></div>
+          <div class="stat"><span class="stat-num">C#</span><span class="stat-label">.NET 6 / WPF</span></div>
+          <div class="stat"><span class="stat-num">0</span><span class="stat-label">外部依赖</span></div>
+          <div class="stat"><span class="stat-num">∞</span><span class="stat-label">可自由修改</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Final CTA ── -->
+    <section class="cta">
+      <div class="cta-inner reveal">
+        <h2>让你的桌面，自己收拾。</h2>
+        <p>双击即跑，无需安装。</p>
+        <a class="btn btn-primary btn-lg" href="https://github.com/cjingwei6-hub/Windows-Stacks/releases/tag/v1.0.0">下载 Stacks</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="brand"><span class="brand-mark" aria-hidden="true"></span> Stacks</span>
+      <span class="muted">MIT Licensed · © 2026 cjingwei6</span>
+      <a href="https://github.com/cjingwei6-hub/Windows-Stacks" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
