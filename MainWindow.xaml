@@ -9,7 +9,6 @@
         ResizeMode="CanResizeWithGrip"
         Topmost="False"
         Title="Stacks"
-        Icon="Resources/icon.ico"
         WindowStartupLocation="Manual"
         Loaded="OnLoaded"
         Closing="OnClosing"
