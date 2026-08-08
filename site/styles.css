@@ -85,11 +85,8 @@ h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; font-weight: 650; }
   display: flex; align-items: center; gap: 24px;
 }
 .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 650; font-size: 16px; }
-.brand-mark {
-  width: 18px; height: 18px; border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-}
+.brand-logo { border-radius: 8px; object-fit: contain; }
+.brand-logo-sm { border-radius: 5px; object-fit: contain; vertical-align: middle; }
 .nav-links { display: flex; gap: 22px; margin-left: 12px; }
 .nav-links a { color: var(--text-2); font-size: 14px; transition: color 0.15s; }
 .nav-links a:hover { color: var(--text); }

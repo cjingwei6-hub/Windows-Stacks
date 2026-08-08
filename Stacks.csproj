@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <!-- <ApplicationIcon>Resources\app.ico</ApplicationIcon> -->
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
     <AssemblyName>Stacks</AssemblyName>
     <RootNamespace>Stacks</RootNamespace>
   </PropertyGroup>
