@@ -13,13 +13,13 @@
 
     <Window.Resources>
         <!-- Modern Fluent color palette -->
-        <Color x:Key="CardBg">#F3FFFFFF</Color>
-        <Color x:Key="CardBorder">#1A000000</Color>
-        <Color x:Key="AccentColor">#FF0078D4</Color>
+        <SolidColorBrush x:Key="CardBg" Color="#F3FFFFFF"/>
+        <SolidColorBrush x:Key="CardBorder" Color="#1A000000"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#FF0078D4"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#DD000000"/>
         <SolidColorBrush x:Key="TextSecondary" Color="#99000000"/>
-        <Color x:Key="ToggleOn">#FF0078D4</Color>
-        <Color x:Key="ToggleOff">#FFB4B4B4</Color>
+        <SolidColorBrush x:Key="ToggleOn" Color="#FF0078D4"/>
+        <SolidColorBrush x:Key="ToggleOff" Color="#FFCCCCCC"/>
 
         <!-- Section header style -->
         <Style x:Key="SectionHeader" TargetType="TextBlock">
@@ -67,7 +67,7 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background">
                 <Setter.Value>
-                    <SolidColorBrush Color="{StaticResource AccentColor}"/>
+                    {StaticResource AccentColor}
                 </Setter.Value>
             </Setter>
             <Setter Property="Template">
@@ -145,7 +145,7 @@
             <DropShadowEffect ShadowDepth="8" BlurRadius="24" Opacity="0.25" Direction="270" Color="Black"/>
         </Border.Effect>
         <Border.Background>
-            <SolidColorBrush Color="{StaticResource CardBg}"/>
+            {StaticResource CardBg}
         </Border.Background>
 
         <Grid>
@@ -181,7 +181,7 @@
                     <Border CornerRadius="10" BorderBrush="{StaticResource CardBorder}"
                             BorderThickness="1" Padding="20,14" Margin="16,0,16,10">
                         <Border.Background>
-                            <SolidColorBrush Color="{StaticResource CardBg}"/>
+                            {StaticResource CardBg}
                         </Border.Background>
                         <StackPanel>
                             <!-- Desktop toggle -->
@@ -233,7 +233,7 @@
                     <Border CornerRadius="10" BorderBrush="{StaticResource CardBorder}"
                             BorderThickness="1" Padding="20,14" Margin="16,0,16,10">
                         <Border.Background>
-                            <SolidColorBrush Color="{StaticResource CardBg}"/>
+                            {StaticResource CardBg}
                         </Border.Background>
                         <StackPanel>
                             <!-- Group mode -->
@@ -283,7 +283,7 @@
                     <Border CornerRadius="10" BorderBrush="{StaticResource CardBorder}"
                             BorderThickness="1" Padding="20,14" Margin="16,0,16,10">
                         <Border.Background>
-                            <SolidColorBrush Color="{StaticResource CardBg}"/>
+                            {StaticResource CardBg}
                         </Border.Background>
                         <StackPanel>
                             <!-- Hide apps toggle -->
