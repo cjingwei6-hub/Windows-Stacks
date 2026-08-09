@@ -49,8 +49,10 @@ public partial class MainWindow : Window
     private bool _renderPending;
     private bool _stacksHidden; // "隐藏叠放框" toggle
     private bool _hideApps; // "隐藏应用" toggle
-    private bool _isFolderMode;   // true = classify a chosen folder; false = classify desktop
-    private string? _folderPath;  // selected folder path when _isFolderMode
+
+    // Multi-source classification: desktop + multiple folders can coexist
+    private bool _classifyDesktop = true;
+    private readonly List<string> _classifyFolders = new();
 
     // Layout constants
     private const double MarginX = 40;
@@ -82,13 +84,14 @@ public partial class MainWindow : Window
 
         InitializeFileManager();
 
-        // Restore saved folder classification (if any) before the first render
-        if (!string.IsNullOrEmpty(_settings.ClassifyFolder)
-            && System.IO.Directory.Exists(_settings.ClassifyFolder))
+        // Restore saved multi-source classification (if any) before the first render
+        _classifyDesktop = _settings.ClassifyDesktop;
+        _classifyFolders.Clear();
+        _classifyFolders.AddRange(_settings.ClassifyFolders);
+        if (!_classifyDesktop || _classifyFolders.Count > 0)
         {
-            _isFolderMode = true;
-            _folderPath = _settings.ClassifyFolder;
-            _fileManager.SetSourcePaths(new[] { _folderPath });
+            // User has custom sources — apply them before first scan
+            _fileManager.SetSourcePaths(GetCurrentSourcePaths());
         }
 
         InitializeTrayIcon();
@@ -186,23 +189,26 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// The paths to classify right now: the chosen folder (folder mode) or the
-    /// desktop(s) (default mode).
+    /// Build the current list of classification sources from the multi-source model:
+    /// desktop (if enabled) + all selected folders.
     /// </summary>
     private List<string> GetCurrentSourcePaths()
     {
         var paths = new List<string>();
-        if (_isFolderMode && !string.IsNullOrEmpty(_folderPath)
-            && System.IO.Directory.Exists(_folderPath))
-        {
-            paths.Add(_folderPath);
-        }
-        else
+
+        if (_classifyDesktop)
         {
             paths.Add(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
             var pub = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
             if (!paths.Contains(pub)) paths.Add(pub);
         }
+
+        foreach (var f in _classifyFolders)
+        {
+            if (!paths.Contains(f) && System.IO.Directory.Exists(f))
+                paths.Add(f);
+        }
+
         return paths;
     }
 
@@ -501,75 +507,119 @@ public partial class MainWindow : Window
 
         var menu = new System.Windows.Forms.ContextMenuStrip();
 
-        // ── Folder classification (new) ──
-        menu.Items.Add(CreateMenuItem("选择文件夹…", PickFolder));
-        menu.Items.Add(CreateMenuItem("分类桌面", SwitchToDesktop));
+        // ── Slim modern menu: only 3 items ──
+        menu.Items.Add(CreateMenuItem("⚙ 设置", OpenSettings));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-
-        // ── Group by submenu ──
-        var groupMenu = new System.Windows.Forms.ToolStripMenuItem("分组方式");
-        groupMenu.DropDownItems.Add(CreateMenuItem("按类型", () => SetGroupMode(GroupEngine.GroupMode.Kind)));
-        groupMenu.DropDownItems.Add(CreateMenuItem("按日期", () => SetGroupMode(GroupEngine.GroupMode.Date)));
-        groupMenu.DropDownItems.Add(CreateMenuItem("不分组", () => SetGroupMode(GroupEngine.GroupMode.None)));
-        menu.Items.Add(groupMenu);
-
-        // ── Layout submenu ──
-        var layoutMenu = new System.Windows.Forms.ToolStripMenuItem("展开布局");
-        layoutMenu.DropDownItems.Add(CreateMenuItem("网格", () => SetLayout("grid")));
-        layoutMenu.DropDownItems.Add(CreateMenuItem("扇形", () => SetLayout("fan")));
-        menu.Items.Add(layoutMenu);
-
-        // ── Sort submenu ──
-        var sortMenu = new System.Windows.Forms.ToolStripMenuItem("排序方式");
-        sortMenu.DropDownItems.Add(CreateMenuItem("按名称", () => SetSortMode(GroupEngine.SortMode.Name)));
-        sortMenu.DropDownItems.Add(CreateMenuItem("按日期", () => SetSortMode(GroupEngine.SortMode.Date)));
-        sortMenu.DropDownItems.Add(CreateMenuItem("按大小", () => SetSortMode(GroupEngine.SortMode.Size)));
-        sortMenu.DropDownItems.Add(CreateMenuItem("按类型", () => SetSortMode(GroupEngine.SortMode.Type)));
-        menu.Items.Add(sortMenu);
-
+        menu.Items.Add(CreateMenuItem("ℹ 关于", ShowAbout));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-        menu.Items.Add(CreateMenuItem("刷新", () => _fileManager.FullScan()));
-
-        // ── Hide all stacks toggle (checkbox) ──
-        var hideItem = new System.Windows.Forms.ToolStripMenuItem("隐藏叠放框");
-        hideItem.Checked = _stacksHidden;
-        hideItem.Click += (s, e) =>
-        {
-            _stacksHidden = !_stacksHidden;
-            hideItem.Checked = _stacksHidden;
-            ToggleStacksVisibility();
-        };
-        menu.Items.Add(hideItem);
-
-        // ── Hide apps toggle (checkbox) — hides the "executable"/应用 stack group ──
-        var hideAppsItem = new System.Windows.Forms.ToolStripMenuItem("隐藏应用");
-        hideAppsItem.Checked = _hideApps;
-        hideAppsItem.Click += (s, e) =>
-        {
-            _hideApps = !_hideApps;
-            hideAppsItem.Checked = _hideApps;
-            _settings.HideApps = _hideApps;
-            SettingsStore.Save(_settings);
-            // Re-render to show/hide the 应用 group immediately
-            DoRenderAllStacks();
-        };
-        menu.Items.Add(hideAppsItem);
-
-        // ── Auto-start (launch at login) toggle ──
-        var autostartItem = new System.Windows.Forms.ToolStripMenuItem("开机自启动");
-        autostartItem.Checked = AutoStartManager.IsEnabled();
-        autostartItem.Click += (s, e) =>
-        {
-            AutoStartManager.Toggle();
-            autostartItem.Checked = AutoStartManager.IsEnabled();
-        };
-        menu.Items.Add(autostartItem);
-
-        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-        menu.Items.Add(CreateMenuItem("关于", ShowAbout));
-        menu.Items.Add(CreateMenuItem("退出", CleanupAndExit));
+        menu.Items.Add(CreateMenuItem("✕ 退出", CleanupAndExit));
 
         _trayIcon.ContextMenuStrip = menu;
+    }
+
+    /// <summary>
+    /// Open the modern settings window. All changes are applied in real-time via callbacks.
+    /// </summary>
+    private void OpenSettings()
+    {
+        var wnd = new SettingsWindow();
+
+        // Wire up real-time callbacks — each setting change takes effect immediately
+        wnd.OnRefreshRequested = () => _fileManager.FullScan();
+
+        wnd.OnDesktopToggled = (enabled) =>
+        {
+            _classifyDesktop = enabled;
+            _settings.ClassifyDesktop = enabled;
+            ApplySourceChange();
+        };
+
+       wnd.OnFolderAdded = (path) =>
+        {
+            if (!_classifyFolders.Contains(path))
+                _classifyFolders.Add(path);
+            if (!_settings.ClassifyFolders.Contains(path))
+                _settings.ClassifyFolders.Add(path);
+            SettingsStore.Save(_settings);
+            ApplySourceChange();
+        };
+
+        wnd.OnFolderRemoved = (path) =>
+        {
+            _classifyFolders.Remove(path);
+            _settings.ClassifyFolders.Remove(path);
+            SettingsStore.Save(_settings);
+            ApplySourceChange();
+        };
+
+        wnd.OnGroupModeChanged = (mode) =>
+        {
+            foreach (var s in _stacks.Values)
+                s.ResetManualPosition();
+            _fileManager.SetGroupMode(Enum.Parse<GroupEngine.GroupMode>(mode, true));
+            _settings.GroupMode = mode;
+            SettingsStore.Save(_settings);
+        };
+
+        wnd.OnLayoutChanged = (layout) =>
+        {
+            _layoutMode = layout;
+            foreach (var s in _stacks.Values)
+            {
+                s.LayoutMode = layout;
+                s.RefreshLayout();
+            }
+            _settings.Layout = layout;
+            SettingsStore.Save(_settings);
+            _ = DelayedReflow(100);
+        };
+
+        wnd.OnSortModeChanged = (sort) =>
+        {
+            _fileManager.SetSortMode(Enum.Parse<GroupEngine.SortMode>(sort, true));
+            _settings.SortBy = sort;
+            SettingsStore.Save(_settings);
+        };
+
+        wnd.OnHideAppsToggled = (hide) =>
+        {
+            _hideApps = hide;
+            _settings.HideApps = hide;
+            SettingsStore.Save(_settings);
+            DoRenderAllStacks();
+        };
+
+        wnd.OnAutoStartToggled = (enabled) =>
+        {
+            AutoStartManager.Toggle();
+            // Toggle() flips, so the new state is whatever IsEnabled returns now
+        };
+
+        // Push current state into the window
+        wnd.LoadState(
+            classifyDesktop: _classifyDesktop,
+            folders: new List<string>(_classifyFolders),
+            groupMode: _settings.GroupMode,
+            layout: _settings.Layout,
+            sortBy: _settings.SortBy,
+            hideApps: _hideApps,
+            autoStart: AutoStartManager.IsEnabled());
+
+        // Show as a dialog centered on this window (but we're transparent/fullscreen,
+        // so CenterOwner will center on screen which is fine)
+        try { wnd.ShowDialog(); }
+        catch { /* window may already be closing */ }
+    }
+
+    /// <summary>
+    /// Called when classification sources change (desktop toggled, folder added/removed).
+    /// Rebuilds source paths, restarts file watcher, and re-scans.
+    /// </summary>
+    private void ApplySourceChange()
+    {
+        SettingsStore.Save(_settings);
+        RestartWatcher();
+        _fileManager.SetSourcePaths(GetCurrentSourcePaths());
     }
 
     /// <summary>
@@ -585,60 +635,16 @@ public partial class MainWindow : Window
         return item;
     }
 
-    // ── Folder classification ──
-
-    private void PickFolder()
-    {
-        var dlg = new System.Windows.Forms.FolderBrowserDialog
-        {
-            Description = "选择一个要分类的文件夹"
-        };
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            _folderPath = dlg.SelectedPath;
-            _isFolderMode = true;
-            _fileManager.SetSourcePaths(new[] { _folderPath });
-            _settings.ClassifyFolder = _folderPath;
-            SettingsStore.Save(_settings);
-            RestartWatcher();
-        }
-    }
-
-    private void SwitchToDesktop()
-    {
-        _isFolderMode = false;
-        _folderPath = null;
-        _fileManager.SetSourceToDesktop();
-        _settings.ClassifyFolder = null;
-        SettingsStore.Save(_settings);
-        RestartWatcher();
-    }
+    // ── Classification source management (now in SettingsWindow) ──
 
     private void RestartWatcher()
     {
         _watcher?.Restart(GetCurrentSourcePaths());
     }
 
-    private void SetSortMode(GroupEngine.SortMode mode)
-    {
-        _fileManager.SetSortMode(mode);
-        _settings.SortBy = mode.ToString().ToLowerInvariant();
-        SettingsStore.Save(_settings);
-    }
-
     private void ToggleStacksVisibility()
     {
         DesktopCanvas.Visibility = _stacksHidden ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    private void SetGroupMode(GroupEngine.GroupMode mode)
-    {
-        // Reset manual positions so stacks reflow in new grouping
-        foreach (var s in _stacks.Values)
-            s.ResetManualPosition();
-        _fileManager.SetGroupMode(mode);
-        _settings.GroupMode = mode.ToString().ToLowerInvariant();
-        SettingsStore.Save(_settings);
     }
 
     private void SetLayout(string mode)
