@@ -16,8 +16,8 @@
         <Color x:Key="CardBg">#F3FFFFFF</Color>
         <Color x:Key="CardBorder">#1A000000</Color>
         <Color x:Key="AccentColor">#FF0078D4</Color>
-        <Color x:Key="TextPrimary">#DD000000</Color>
-        <Color x:Key="TextSecondary">#99000000</Color>
+        <SolidColorBrush x:Key="TextPrimary" Color="#DD000000"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#99000000"/>
         <Color x:Key="ToggleOn">#FF0078D4</Color>
         <Color x:Key="ToggleOff">#FFB4B4B4</Color>
 
