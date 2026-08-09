@@ -49,6 +49,8 @@ public partial class MainWindow : Window
     private bool _renderPending;
     private bool _stacksHidden; // "隐藏叠放框" toggle
     private bool _hideApps; // "隐藏应用" toggle
+    private bool _isFolderMode;   // true = classify a chosen folder; false = classify desktop
+    private string? _folderPath;  // selected folder path when _isFolderMode
 
     // Layout constants
     private const double MarginX = 40;
@@ -79,6 +81,16 @@ public partial class MainWindow : Window
         ApplySavedPreferences();
 
         InitializeFileManager();
+
+        // Restore saved folder classification (if any) before the first render
+        if (!string.IsNullOrEmpty(_settings.ClassifyFolder)
+            && System.IO.Directory.Exists(_settings.ClassifyFolder))
+        {
+            _isFolderMode = true;
+            _folderPath = _settings.ClassifyFolder;
+            _fileManager.SetSourcePaths(new[] { _folderPath });
+        }
+
         InitializeTrayIcon();
         StartZOrderMaintenance();
         RenderAllStacks();
@@ -170,11 +182,28 @@ public partial class MainWindow : Window
     private void StartFileWatcher()
     {
         _watcher = new FileWatcherService(_fileManager);
+        _watcher.Start(GetCurrentSourcePaths());
+    }
+
+    /// <summary>
+    /// The paths to classify right now: the chosen folder (folder mode) or the
+    /// desktop(s) (default mode).
+    /// </summary>
+    private List<string> GetCurrentSourcePaths()
+    {
         var paths = new List<string>();
-        paths.Add(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
-        var pub = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
-        if (!paths.Contains(pub)) paths.Add(pub);
-        _watcher.Start(paths);
+        if (_isFolderMode && !string.IsNullOrEmpty(_folderPath)
+            && System.IO.Directory.Exists(_folderPath))
+        {
+            paths.Add(_folderPath);
+        }
+        else
+        {
+            paths.Add(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+            var pub = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
+            if (!paths.Contains(pub)) paths.Add(pub);
+        }
+        return paths;
     }
 
     private void OnGroupsChanged()
@@ -472,6 +501,11 @@ public partial class MainWindow : Window
 
         var menu = new System.Windows.Forms.ContextMenuStrip();
 
+        // ── Folder classification (new) ──
+        menu.Items.Add(CreateMenuItem("选择文件夹…", PickFolder));
+        menu.Items.Add(CreateMenuItem("分类桌面", SwitchToDesktop));
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+
         // ── Group by submenu ──
         var groupMenu = new System.Windows.Forms.ToolStripMenuItem("分组方式");
         groupMenu.DropDownItems.Add(CreateMenuItem("按类型", () => SetGroupMode(GroupEngine.GroupMode.Kind)));
@@ -549,6 +583,40 @@ public partial class MainWindow : Window
         var item = new System.Windows.Forms.ToolStripMenuItem(text);
         item.Click += (s, e) => Dispatcher.BeginInvoke(action);
         return item;
+    }
+
+    // ── Folder classification ──
+
+    private void PickFolder()
+    {
+        var dlg = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = "选择一个要分类的文件夹"
+        };
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            _folderPath = dlg.SelectedPath;
+            _isFolderMode = true;
+            _fileManager.SetSourcePaths(new[] { _folderPath });
+            _settings.ClassifyFolder = _folderPath;
+            SettingsStore.Save(_settings);
+            RestartWatcher();
+        }
+    }
+
+    private void SwitchToDesktop()
+    {
+        _isFolderMode = false;
+        _folderPath = null;
+        _fileManager.SetSourceToDesktop();
+        _settings.ClassifyFolder = null;
+        SettingsStore.Save(_settings);
+        RestartWatcher();
+    }
+
+    private void RestartWatcher()
+    {
+        _watcher?.Restart(GetCurrentSourcePaths());
     }
 
     private void SetSortMode(GroupEngine.SortMode mode)

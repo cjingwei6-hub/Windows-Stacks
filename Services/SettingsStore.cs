@@ -25,6 +25,12 @@ public class PositionData
     public string Layout { get; set; } = "grid";
     public string SortBy { get; set; } = "name";
     public bool HideApps { get; set; }
+
+    /// <summary>
+    /// When set (non-null, non-empty), the app classifies THIS folder's contents
+    /// instead of the desktop. null/empty = classify desktop (default).
+    /// </summary>
+    public string? ClassifyFolder { get; set; }
 }
 
 public static class SettingsStore

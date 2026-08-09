@@ -133,5 +133,12 @@ public class FileWatcherService : IDisposable
         _watchers.Clear();
     }
 
+    /// <summary>Stop watching current paths and start watching new ones.</summary>
+    public void Restart(IEnumerable<string> paths)
+    {
+        Stop();
+        Start(paths);
+    }
+
     public void Dispose() => Stop();
 }

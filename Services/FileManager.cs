@@ -61,6 +61,19 @@ public class FileManager
         FullScan();
     }
 
+    /// <summary>
+    /// Point classification at a single folder (folder-classification mode).
+    /// Files are never moved — we only read and group the folder's contents.
+    /// </summary>
+    public void SetSourcePaths(IEnumerable<string> paths)
+    {
+        _desktopPaths = paths.ToList();
+        FullScan();
+    }
+
+    /// <summary>Restore classification to the desktop (default mode).</summary>
+    public void SetSourceToDesktop() => Initialize();
+
     public void FullScan()
     {
         var newFiles = new Dictionary<string, DesktopItem>();
