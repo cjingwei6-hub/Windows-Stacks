@@ -2,91 +2,120 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
-        ResizeMode="NoResize"
+        AllowsTransparency="False"
+        Background="#FFFFFFFF"
+        ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False"
         Topmost="True"
-        Width="480" Height="620"
-        WindowStartupLocation="CenterOwner"
+        Width="680" Height="520"
+        WindowStartupLocation="CenterScreen"
+        MinWidth="560" MinHeight="420"
         Loaded="OnLoaded">
 
     <Window.Resources>
-        <!-- Modern Fluent color palette -->
-        <SolidColorBrush x:Key="CardBg" Color="#F3FFFFFF"/>
-        <SolidColorBrush x:Key="CardBorder" Color="#1A000000"/>
-        <SolidColorBrush x:Key="AccentColor" Color="#FF0078D4"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#DD000000"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#99000000"/>
+        <!-- ═══ Colors ═══ -->
+        <SolidColorBrush x:Key="BgMain" Color="#FFF5F5F5"/>
+        <SolidColorBrush x:Key="BgSidebar" Color="#FFEDEDED"/>
+        <SolidColorBrush x:Key="BgCard" Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="Accent" Color="#FF0078D4"/>
+        <SolidColorBrush x:Key="AccentHover" Color="#FF1084D0"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#DD1A1A1A"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#99555555"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#BB888888"/>
+        <SolidColorBrush x:Key="BorderLight" Color="#1AE0E0E0"/>
         <SolidColorBrush x:Key="ToggleOn" Color="#FF0078D4"/>
-        <SolidColorBrush x:Key="ToggleOff" Color="#FFCCCCCC"/>
+        <SolidColorBrush x:Key="ToggleOff" Color="#FFD0D0D0"/>
+        <SolidColorBrush x:Key="DangerBg" Color="#33FF4444"/>
+        <SolidColorBrush x:Key="DangerHover" Color="#55FF4444"/>
 
-        <!-- Section header style -->
-        <Style x:Key="SectionHeader" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+        <!-- ═══ Sidebar nav item style ═══ -->
+        <Style x:Key="NavItem" TargetType="RadioButton">
+            <Setter Property="GroupName" Value="NavGroup"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="bd" CornerRadius="6,0,0,6"
+                                Background="Transparent"
+                                Padding="14,12"
+                                Margin="4,2,0,2"
+                                Cursor="Hand">
+                            <DockPanel>
+                                <TextBlock x:Name="iconTxt" FontSize="16" Width="24"
+                                           TextAlignment="Center" VerticalAlignment="Center"
+                                           DockPanel.Dock="Left" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="labelTxt" FontFamily="Microsoft YaHei UI"
+                                           FontSize="13" VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BgCard}"/>
+                                <Setter TargetName="iconTxt" Property="Foreground" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="labelTxt" Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                <Setter TargetName="labelTxt" Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#20FFFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-            <Setter Property="Margin" Value="24,16,0,8"/>
         </Style>
 
-        <!-- Label text -->
-        <Style x:Key="LabelStyle" TargetType="TextBlock">
+        <!-- ═══ Setting row: label left, control right ═══ -->
+        <Style x:Key="SettingRow" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+
+        <Style x:Key="LabelTxt" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <!-- Sub-label / description -->
-        <Style x:Key="DescStyle" TargetType="TextBlock">
+        <Style x:Key="DescTxt" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="Margin" Value="0,2,0,0"/>
+            <Setter Property="Margin" Value="0,3,0,0"/>
         </Style>
 
-        <!-- ComboBox style -->
-        <Style x:Key="ModernCombo" TargetType="ComboBox">
+        <!-- ═══ Custom dropdown button (replaces retro ComboBox) ═══ -->
+        <Style x:Key="DropdownBtn" TargetType="Button">
             <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Padding" Value="10,7"/>
-            <Setter Property="MinWidth" Value="120"/>
-            <Setter Property="BorderBrush" Value="#FFD0D0D0"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="{StaticResource BgCard}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-        </Style>
-
-        <!-- Primary button -->
-        <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,7,28,7"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="MinWidth" Value="130"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                        <Border x:Name="bd" CornerRadius="5"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <DockPanel>
+                                <ContentPresenter VerticalAlignment="Center"/>
+                                <Path DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                      Margin="8,0,6,0" Data="M 0 0 L 5 5 L 10 0 Z"
+                                      Fill="{StaticResource TextMuted}" Stretch="Uniform"
+                                      Width="9" Height="5"/>
+                            </DockPanel>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background">
-                                    <Setter.Value>
-                                        <SolidColorBrush Color="#FF1084D0"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bd" Property="Background">
-                                    <Setter.Value>
-                                        <SolidColorBrush Color="#FF005A9E"/>
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -94,22 +123,53 @@
             </Setter>
         </Style>
 
-        <!-- Danger button (remove folder) — no hover trigger to avoid XAML parsing issues -->
-        <Style x:Key="DangerButton" TargetType="Button">
+        <!-- ═══ Dropdown popup (context menu) ═══ -->
+        <Style x:Key="DropItem" TargetType="MenuItem">
             <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <!-- ═══ Primary button ═══ -->
+        <Style x:Key="BtnPrimary" TargetType="Button">
+            <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="20,9"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="#33FF4444"/>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border CornerRadius="6" Background="{TemplateBinding Background}"
+                        <Border x:Name="bd" CornerRadius="6"
+                                Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ═══ Danger button (remove folder) ═══ -->
+        <Style x:Key="BtnDanger" TargetType="Button">
+            <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="{StaticResource DangerBg}"/>
+            <Setter Property="Foreground" Value="#CC3333"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="4" Background="{TemplateBinding Background}"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
@@ -118,220 +178,242 @@
             </Setter>
         </Style>
 
-        <!-- Folder item in ListBox -->
-        <DataTemplate x:Key="FolderItemTemplate">
-            <Border CornerRadius="6" Background="#0A000000" Padding="10,8" Margin="0,3">
+        <!-- ═══ Toggle switch (Border + Ellipse child, styled via Tag) ═══ -->
+        <Style x:Key="ToggleStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource ToggleOff}"/>
+            <Setter Property="CornerRadius" Value="11"/>
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Style.Triggers>
+                <Trigger Property="Tag" Value="On">
+                    <Setter Property="Background" Value="{StaticResource ToggleOn}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ═══ Folder item template ═══ -->
+        <DataTemplate x:Key="FolderItemTpl">
+            <Border CornerRadius="5" Background="#0A000000" Padding="10,7" Margin="0,3">
                 <DockPanel>
                     <TextBlock Text="{Binding .}" FontFamily="Microsoft YaHei UI" FontSize="12"
-                               Foreground="{StaticResource TextPrimary}"
-                               VerticalAlignment="Center" DockPanel.Dock="Left"
-                               TextTrimming="CharacterEllipsis"/>
-                    <Button Content="✕" Style="{DynamicResource DangerButton}"
+                               Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"
+                               DockPanel.Dock="Left" TextTrimming="CharacterEllipsis"/>
+                    <Button Content="✕" Style="{DynamicResource BtnDanger}"
                             Click="RemoveFolder_Click" Tag="{Binding .}"
-                            HorizontalAlignment="Right"/>
+                            HorizontalAlignment="Right" Padding="5,1"/>
                 </DockPanel>
             </Border>
         </DataTemplate>
     </Window.Resources>
 
-    <!-- Root: rounded card with drop shadow -->
-    <Border CornerRadius="14" BorderBrush="#20000000" BorderThickness="1"
-            ClipToBounds="True" MouseLeftButtonDown="OnDragMove">
-        <Border.Effect>
-            <DropShadowEffect ShadowDepth="8" BlurRadius="24" Opacity="0.25" Direction="270" Color="Black"/>
-        </Border.Effect>
+    <!-- ═══ Root grid: sidebar + content ═══ -->
+    <Grid Background="{StaticResource BgMain}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160" MinWidth="120"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <!-- ═══ LEFT SIDEBAR ═══ -->
+        <Border Grid.Row="0" Grid.Column="0" BorderBrush="{StaticResource BorderLight}"
+                BorderThickness="0,0,1,0" Background="{StaticResource BgSidebar}">
+            <StackPanel Margin="0,16,0,12">
 
-            <!-- ═══ Title bar ═══ -->
-            <Border Grid.Row="0" CornerRadius="14,14,0,0" Background="#FFF8F8F8"
-                    Padding="20,14" MouseLeftButtonDown="OnDragMove">
-                <Grid>
-                    <TextBlock Text="⚙ 设置" FontFamily="Microsoft YaHei UI" FontSize="15"
+                <!-- App title in sidebar -->
+                <StackPanel Orientation="Horizontal" Margin="16,0,12,18" Cursor="Hand"
+                          MouseLeftButtonDown="OnDragMove">
+                    <TextBlock Text="⚙" FontSize="20" VerticalAlignment="Center"/>
+                    <TextBlock Text=" 设置" FontFamily="Microsoft YaHei UI" FontSize="15"
                                FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
-                               VerticalAlignment="Center"/>
-                    <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Background="Transparent" BorderThickness="0" FontSize="14"
-                            Foreground="{StaticResource TextSecondary}" Cursor="Hand"
-                            Padding="8,4" Click="Close_Click"/>
-                </Grid>
-            </Border>
+                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </StackPanel>
 
-            <!-- ═══ Scrollable content ═══ -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled" Padding="0,4">
+                <Separator Margin="16,14,12,14" Background="{StaticResource BorderLight}"/>
 
-                <StackPanel>
+                <!-- Nav items -->
+                <RadioButton GroupName="Nav" Style="{DynamicResource NavItem}"
+                             Tag="sources" IsChecked="True" Click="Nav_Click"
+                             Content="📁 分类源" ToolTip="选择要分类的桌面和文件夹"/>
 
-                    <!-- ── Section: Classification Sources ── -->
-                    <TextBlock Text="分类源" Style="{StaticResource SectionHeader}"/>
+                <RadioButton GroupName="Nav" Style="{DynamicResource NavItem}"
+                             Tag="grouping" Click="Nav_Click"
+                             Content="📊 分组与布局" ToolTip="分组方式、展开布局、排序"/>
 
-                    <Border CornerRadius="10" BorderBrush="{StaticResource CardBorder}"
-                            BorderThickness="1" Padding="20,14" Margin="16,0,16,10" Background="{StaticResource CardBg}">
-                        <StackPanel>
-                            <!-- Desktop toggle -->
-                            <StackPanel Orientation="Horizontal" Margin="0,6">
-                                <StackPanel>
-                                    <TextBlock Text="分类桌面" Style="{StaticResource LabelStyle}"/>
-                                    <TextBlock Text="将桌面文件纳入叠放分类" Style="{StaticResource DescStyle}"/>
-                                </StackPanel>
-                                <Border x:Name="DesktopToggle" CornerRadius="12" Width="42" Height="22"
-                                        Background="{StaticResource ToggleOff}" Cursor="Hand"
-                                        MouseLeftButtonDown="DesktopToggle_Click" HorizontalAlignment="Right"
-                                        Margin="12,0,0,0">
-                                    <Ellipse x:Name="DesktopThumb" Fill="White" Width="18" Height="18"
-                                             HorizontalAlignment="Left" Margin="2,0,0,0"
-                                             RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform>
-                                            <TranslateTransform X="0" Y="0"/>
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
-                                </Border>
-                            </StackPanel>
+                <RadioButton GroupName="Nav" Style="{DynamicResource NavItem}"
+                             Tag="display" Click="Nav_Click"
+                             Content="👁 显示选项" ToolTip="隐藏应用、开机自启"/>
 
-                            <Separator Margin="0,10" Background="#1A000000"/>
+                <!-- Spacer -->
+                <Rectangle Height="1" Fill="Transparent" VerticalAlignment="Stretch"/>
 
-                            <!-- Folders section -->
+                <!-- Version in sidebar bottom -->
+                <TextBlock Text="Stacks v1.0" FontFamily="Microsoft YaHei UI" FontSize="10"
+                           Foreground="{StaticResource TextMuted}" Margin="16,0,12,0"
+                           VerticalAlignment="Bottom"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══ RIGHT CONTENT AREA ═══ -->
+        <Border Grid.Row="0" Grid.Column="1">
+            <Grid>
+                <!-- ── Panel 1: Classification Sources ── -->
+                <StackPanel x:Name="PanelSources" Visibility="Visible" Margin="24,20,24,12">
+                    <TextBlock Text="分类源" FontFamily="Microsoft YaHei UI" FontSize="17"
+                               FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Desktop toggle row -->
+                    <Border CornerRadius="8" Background="{StaticResource BgCard}"
+                            BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                            Padding="18,14" Margin="0,0,0,12">
+                        <StackPanel Style="{DynamicResource SettingRow}">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <TextBlock Text="分类文件夹" Style="{StaticResource LabelStyle}"
-                                               VerticalAlignment="Center"/>
-                                    <Button Content="+ 添加文件夹" Style="{StaticResource ModernButton}"
-                                            FontSize="11" Padding="10,5" Margin="12,0,0,0"
-                                            Click="AddFolder_Click" VerticalAlignment="Center"/>
-                                </StackPanel>
-                                <TextBlock Text="添加要参与分类的文件夹（可多个）" Style="{StaticResource DescStyle}"/>
-
-                                <!-- Folder list -->
-                                <ListBox x:Name="FolderList" ItemsSource="{Binding}"
-                                         ItemTemplate="{DynamicResource FolderItemTemplate}"
-                                         BorderThickness="0" Background="Transparent"
-                                         MaxHeight="140" Margin="0,8,0,0"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                                <TextBlock Text="分类桌面" Style="{DynamicResource LabelTxt}"/>
+                                <TextBlock Text="将桌面文件纳入叠放分类" Style="{DynamicResource DescTxt}"/>
                             </StackPanel>
+                                <Border x:Name="DesktopToggle" Style="{DynamicResource ToggleStyle}" Tag="Off"
+                                    MouseLeftButtonDown="DesktopToggle_Click" HorizontalAlignment="Right">
+                                    <Ellipse Fill="White" Width="18" Height="18" HorizontalAlignment="Left" Margin="2,0,0,0"/>
+                                </Border>
                         </StackPanel>
                     </Border>
 
-                    <!-- ── Section: Grouping & Layout ── -->
-                    <TextBlock Text="分组与布局" Style="{StaticResource SectionHeader}"/>
+                    <!-- Folders card -->
+                    <Border CornerRadius="8" Background="{StaticResource BgCard}"
+                            BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                            Padding="18,14">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="分类文件夹" Style="{DynamicResource LabelTxt}"/>
+                                <Button Content="+ 添加文件夹" Style="{DynamicResource BtnPrimary}"
+                                        Padding="10,5" FontSize="11" Margin="12,0,0,0"
+                                        Click="AddFolder_Click" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="添加要参与分类的文件夹（可多个）" Style="{DynamicResource DescTxt}"/>
 
-                    <Border CornerRadius="10" BorderBrush="{StaticResource CardBorder}"
-                            BorderThickness="1" Padding="20,14" Margin="16,0,16,10" Background="{StaticResource CardBg}">
+                            <!-- Folder list -->
+                            <ListBox x:Name="FolderList" ItemsSource="{Binding}"
+                                     ItemTemplate="{DynamicResource FolderItemTpl}"
+                                     BorderThickness="0" Background="Transparent"
+                                     MaxHeight="150" Margin="0,10,0,0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ── Panel 2: Grouping & Layout ── -->
+                <StackPanel x:Name="PanelGrouping" Visibility="Collapsed" Margin="24,20,24,12">
+                    <TextBlock Text="分组与布局" FontFamily="Microsoft YaHei UI" FontSize="17"
+                               FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                               Margin="0,0,0,16"/>
+
+                    <Border CornerRadius="8" Background="{StaticResource BgCard}"
+                            BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                            Padding="18,14">
                         <StackPanel>
                             <!-- Group mode -->
-                            <StackPanel Orientation="Horizontal" Margin="0,6">
-                                <TextBlock Text="分组方式" Style="{StaticResource LabelStyle}"
-                                           VerticalAlignment="Center"/>
-                                <ComboBox x:Name="GroupModeCombo" Style="{StaticResource ModernCombo}"
-                                          SelectionChanged="GroupModeCombo_SelectionChanged"
-                                          Margin="12,0,0,0">
-                                    <ComboBoxItem Content="按类型" Tag="kind" IsSelected="True"/>
-                                    <ComboBoxItem Content="按日期" Tag="date"/>
-                                    <ComboBoxItem Content="不分组" Tag="none"/>
-                                </ComboBox>
+                            <StackPanel Style="{DynamicResource SettingRow}">
+                                <TextBlock Text="分组方式" Style="{DynamicResource LabelTxt}"/>
+                                <Button x:Name="GroupModeBtn" Style="{DynamicResource DropdownBtn}"
+                                        Content="按类型" Click="GroupModeBtn_Click"
+                                        Tag="kind" Margin="12,0,0,0"/>
                             </StackPanel>
 
                             <!-- Layout -->
-                            <StackPanel Orientation="Horizontal" Margin="0,6">
-                                <TextBlock Text="展开布局" Style="{StaticResource LabelStyle}"
-                                           VerticalAlignment="Center"/>
-                                <ComboBox x:Name="LayoutCombo" Style="{StaticResource ModernCombo}"
-                                          SelectionChanged="LayoutCombo_SelectionChanged"
-                                          Margin="12,0,0,0">
-                                    <ComboBoxItem Content="网格" Tag="grid" IsSelected="True"/>
-                                    <ComboBoxItem Content="扇形" Tag="fan"/>
-                                </ComboBox>
+                            <StackPanel Style="{DynamicResource SettingRow}">
+                                <TextBlock Text="展开布局" Style="{DynamicResource LabelTxt}"/>
+                                <Button x:Name="LayoutBtn" Style="{DynamicResource DropdownBtn}"
+                                        Content="网格" Click="LayoutBtn_Click"
+                                        Tag="grid" Margin="12,0,0,0"/>
                             </StackPanel>
 
                             <!-- Sort mode -->
-                            <StackPanel Orientation="Horizontal" Margin="0,6">
-                                <TextBlock Text="排序方式" Style="{StaticResource LabelStyle}"
-                                           VerticalAlignment="Center"/>
-                                <ComboBox x:Name="SortModeCombo" Style="{StaticResource ModernCombo}"
-                                          SelectionChanged="SortModeCombo_SelectionChanged"
-                                          Margin="12,0,0,0">
-                                    <ComboBoxItem Content="按名称" Tag="name" IsSelected="True"/>
-                                    <ComboBoxItem Content="按日期" Tag="date"/>
-                                    <ComboBoxItem Content="按大小" Tag="size"/>
-                                    <ComboBoxItem Content="按类型" Tag="type"/>
-                                </ComboBox>
+                            <StackPanel Style="{DynamicResource SettingRow}">
+                                <TextBlock Text="排序方式" Style="{DynamicResource LabelTxt}"/>
+                                <Button x:Name="SortModeBtn" Style="{DynamicResource DropdownBtn}"
+                                        Content="按名称" Click="SortModeBtn_Click"
+                                        Tag="name" Margin="12,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
+                </StackPanel>
 
-                    <!-- ── Section: Display Options ── -->
-                    <TextBlock Text="显示选项" Style="{StaticResource SectionHeader}"/>
+                <!-- ── Panel 3: Display Options ── -->
+                <StackPanel x:Name="PanelDisplay" Visibility="Collapsed" Margin="24,20,24,12">
+                    <TextBlock Text="显示选项" FontFamily="Microsoft YaHei UI" FontSize="17"
+                               FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                               Margin="0,0,0,16"/>
 
-                    <Border CornerRadius="10" BorderBrush="{StaticResource CardBorder}"
-                            BorderThickness="1" Padding="20,14" Margin="16,0,16,10" Background="{StaticResource CardBg}">
+                    <Border CornerRadius="8" Background="{StaticResource BgCard}"
+                            BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                            Padding="18,14">
                         <StackPanel>
                             <!-- Hide apps toggle -->
-                            <StackPanel Orientation="Horizontal" Margin="0,6">
+                            <StackPanel Style="{DynamicResource SettingRow}">
                                 <StackPanel>
-                                    <TextBlock Text="隐藏应用" Style="{StaticResource LabelStyle}"/>
-                                    <TextBlock Text="隐藏「应用」类型的叠放组" Style="{StaticResource DescStyle}"/>
+                                    <TextBlock Text="隐藏应用" Style="{DynamicResource LabelTxt}"/>
+                                    <TextBlock Text="隐藏「应用」类型的叠放组" Style="{DynamicResource DescTxt}"/>
                                 </StackPanel>
-                                <Border x:Name="HideAppsToggle" CornerRadius="12" Width="42" Height="22"
-                                        Background="{StaticResource ToggleOff}" Cursor="Hand"
-                                        MouseLeftButtonDown="HideAppsToggle_Click" HorizontalAlignment="Right"
-                                        Margin="12,0,0,0">
-                                    <Ellipse x:Name="HideAppsThumb" Fill="White" Width="18" Height="18"
-                                             HorizontalAlignment="Left" Margin="2,0,0,0"
-                                             RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform>
-                                            <TranslateTransform X="0" Y="0"/>
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
+                                <Border x:Name="HideAppsToggle" Style="{DynamicResource ToggleStyle}" Tag="Off"
+                                        MouseLeftButtonDown="HideAppsToggle_Click" HorizontalAlignment="Right">
+                                    <Ellipse Fill="White" Width="18" Height="18" HorizontalAlignment="Left" Margin="2,0,0,0"/>
                                 </Border>
                             </StackPanel>
 
                             <!-- Auto-start toggle -->
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel Style="{DynamicResource SettingRow}" Margin="0,14,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="开机自启动" Style="{StaticResource LabelStyle}"/>
-                                    <TextBlock Text="登录 Windows 时自动运行 Stacks" Style="{StaticResource DescStyle}"/>
+                                    <TextBlock Text="开机自启动" Style="{DynamicResource LabelTxt}"/>
+                                    <TextBlock Text="登录 Windows 时自动运行 Stacks" Style="{DynamicResource DescTxt}"/>
                                 </StackPanel>
-                                <Border x:Name="AutoStartToggle" CornerRadius="12" Width="42" Height="22"
-                                        Background="{StaticResource ToggleOff}" Cursor="Hand"
-                                        MouseLeftButtonDown="AutoStartToggle_Click" HorizontalAlignment="Right"
-                                        Margin="12,0,0,0">
-                                    <Ellipse x:Name="AutoStartThumb" Fill="White" Width="18" Height="18"
-                                             HorizontalAlignment="Left" Margin="2,0,0,0"
-                                             RenderTransformOrigin="0.5,0.5">
-                                        <Ellipse.RenderTransform>
-                                            <TranslateTransform X="0" Y="0"/>
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
+                                <Border x:Name="AutoStartToggle" Style="{DynamicResource ToggleStyle}" Tag="Off"
+                                        MouseLeftButtonDown="AutoStartToggle_Click" HorizontalAlignment="Right">
+                                    <Ellipse Fill="White" Width="18" Height="18" HorizontalAlignment="Left" Margin="2,0,0,0"/>
                                 </Border>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
                     <!-- Refresh button -->
-                    <Button Content="🔄 刷新文件列表" Style="{StaticResource ModernButton}"
-                            HorizontalAlignment="Stretch" Margin="16,12,16,4"
-                            Padding="0,10" Click="Refresh_Click"/>
-
+                    <Button Content="🔄 刷新文件列表" Style="{DynamicResource BtnPrimary}"
+                            HorizontalAlignment="Stretch" Margin="0,16,0,0"
+                            Padding="0,11" Click="Refresh_Click"/>
                 </StackPanel>
-            </ScrollViewer>
+            </Grid>
+        </Border>
 
-            <!-- ═══ Footer ═══ -->
-            <Border Grid.Row="2" CornerRadius="0,0,14,14" Background="#FFF0F0F0"
-                    Padding="20,12" BorderBrush="#15000000" BorderThickness="0,1,0,0">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <TextBlock Text="Stacks v1.0 · Windows 桌面叠放"
-                               FontFamily="Microsoft YaHei UI" FontSize="11"
-                               Foreground="{StaticResource TextSecondary}"
-                               VerticalAlignment="Center" Margin="0,0,16,0"/>
-                    <Button Content="完成" Style="{StaticResource ModernButton}" Padding="24,8"
-                            Click="Close_Click"/>
-                </StackPanel>
-            </Border>
-        </Grid>
-    </Border>
+        <!-- ═══ FOOTER BAR ═══ -->
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{StaticResource BgSidebar}"
+                BorderBrush="{StaticResource BorderLight}" BorderThickness="0,1,0,0"
+                Padding="16,10" MouseLeftButtonDown="OnDragMove">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="完成" Style="{DynamicResource BtnPrimary}" Padding="28,9"
+                        Click="Close_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══ Context menus for custom dropdowns (inside Grid, don't take layout space) ═══ -->
+        <ContextMenu x:Name="GroupModeMenu" Grid.Row="0" Grid.Column="1" Placement="Bottom">
+            <MenuItem Header="按类型 " Tag="kind" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+            <MenuItem Header="按日期 " Tag="date" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+            <MenuItem Header="不分组 " Tag="none" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+        </ContextMenu>
+
+        <ContextMenu x:Name="LayoutMenu" Grid.Row="0" Grid.Column="1" Placement="Bottom">
+            <MenuItem Header="网格 " Tag="grid" Style="{DynamicResource DropItem}" Click="LayoutItem_Click"/>
+            <MenuItem Header="扇形 " Tag="fan" Style="{DynamicResource DropItem}" Click="LayoutItem_Click"/>
+        </ContextMenu>
+
+        <ContextMenu x:Name="SortModeMenu" Grid.Row="0" Grid.Column="1" Placement="Bottom">
+            <MenuItem Header="按名称 " Tag="name" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+            <MenuItem Header="按日期 " Tag="date" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+            <MenuItem Header="按大小 " Tag="size" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+            <MenuItem Header="按类型 " Tag="type" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+        </ContextMenu>
+    </Grid>
 </Window>
