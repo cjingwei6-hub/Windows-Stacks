@@ -28,10 +28,9 @@ public partial class StackControl : UserControl
     private bool _isExpanded;
     private string _layoutMode = "grid"; // "grid" or "fan"
     private Point _pressPoint;
-    private bool _isLongPress;
     private bool _isDragging;
     private Point _dragStartPos; // Canvas position at drag start
-    private DateTime _pressTime;
+    private Point _dragStartMouse; // mouse position (Canvas coords) at drag start
     private TranslateTransform? _dragTransform;
     private Point? _preExpandPosition; // saved before RepositionIfOutOfBounds shifts us
     private Border? _selectedItemBorder; // currently selected file item's icon border
@@ -373,6 +372,13 @@ public partial class StackControl : UserControl
             // 3. Now measure + resize to the small collapsed size (hit area shrinks NOW)
             RenderCollapsedIcons();
 
+            // 4. CRITICAL: Force a synchronous layout pass so ActualWidth/ActualHeight
+            //    update IMMEDIATELY (not deferred). Without this, WPF hit-testing still
+            //    uses the OLD expanded size (e.g. 400×500) until the next async layout
+            //    pass — meaning this stack's invisible hit area covers everything below
+            //    it, causing "click any stack → only 'image' toggles" bug.
+            UpdateLayout();
+
             // 4. Restore pre-expand position so the stack doesn't wander
             if (_preExpandPosition.HasValue && VisualTreeHelper.GetParent(this) is Canvas c)
             {
@@ -476,15 +482,11 @@ public partial class StackControl : UserControl
         }
     }
 
-    // ---- Mouse events ----
+    // ---- Mouse events (RootControl = click to expand/collapse) ----
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         // ── Expanded state: click on background (not on a file item) collapses ──
-        // File items (the StackPanels inside ExpandedItems) set e.Handled=true in
-        // their own MouseLeftButtonDown handlers (see RenderExpandedItems). So
-        // if e.Handled is still false here, the click landed on empty background
-        // (WrapPanel gaps, ScrollViewer padding, etc.) — collapse the stack.
         if (_isExpanded)
         {
             if (!e.Handled)
@@ -495,77 +497,19 @@ public partial class StackControl : UserControl
             return;
         }
 
-        // ── Collapsed state: start drag ──
+        // ── Collapsed state: just record press for click detection ──
+        // Drag is ONLY handled by the DragHandle (white grip bar).
         _pressPoint = e.GetPosition(this);
-        _pressTime = DateTime.Now;
-        _isLongPress = false;
-        _isDragging = false;
-
-        // Commit any stale transform from a previous incomplete drag
-        var left = Canvas.GetLeft(this);
-        var top = Canvas.GetTop(this);
-        if (!double.IsNaN(left) && !double.IsNaN(top))
-            _dragStartPos = new Point(left, top);
-        else
-            _dragStartPos = new Point(0, 0);
-
-        // Create ONE transform and update its X/Y — avoids per-frame allocation
-        _dragTransform = new TranslateTransform(0, 0);
-        RenderTransform = _dragTransform;
-        CaptureMouse();
     }
 
     private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        ReleaseMouseCapture();
-        if (_isDragging)
+        // Click detection for expand (collapsed state)
+        if (!_isExpanded && !_isDragging)
         {
-            // Commit final position and clear transform
-            var offset = e.GetPosition(this) - _pressPoint;
-            var newLeft = _dragStartPos.X + offset.X;
-            var newTop = _dragStartPos.Y + offset.Y;
-
-            // Snap to grid, like Windows desktop icons
-            newLeft = DesktopGrid.SnapX(newLeft);
-            newTop = DesktopGrid.SnapY(newTop);
-
-            // Clamp inside the canvas so it can't be dragged off-screen.
-            // If the snapped position would exceed bounds, the boundary value wins
-            // over the grid — this lets users place stacks at the screen edges
-            // even when the grid cell doesn't align perfectly (same as Windows).
-            if (VisualTreeHelper.GetParent(this) is Canvas canvas)
-            {
-                double cw = canvas.ActualWidth;
-                double ch = canvas.ActualHeight;
-                if (cw > 0 && ch > 0)
-                {
-                    double maxX = Math.Max(0, cw - this.ActualWidth);
-                    double maxY = Math.Max(0, ch - this.ActualHeight);
-                    newLeft = Math.Clamp(newLeft, 0, maxX);
-                    newTop = Math.Clamp(newTop, 0, maxY);
-                }
-            }
-
-            Canvas.SetLeft(this, newLeft);
-            Canvas.SetTop(this, newTop);
-            RenderTransform = null;
-            _dragTransform = null;
-            _isDragging = false;
-            IsManuallyPositioned = true;
-
-            // Force parent canvas to repaint and clear any ghost pixels
-            var parent = VisualTreeHelper.GetParent(this) as UIElement;
-            parent?.InvalidateVisual();
-
-            DragEnded?.Invoke(this);
-            return;
-        }
-        var delta = e.GetPosition(this) - _pressPoint;
-        if (delta.Length < 5 && !_isLongPress)
-        {
-            if (_isExpanded)
-                return;
-            StackClicked?.Invoke(_groupKey);
+            var delta = e.GetPosition(this) - _pressPoint;
+            if (delta.Length < 5)
+                StackClicked?.Invoke(_groupKey);
         }
     }
 
@@ -577,22 +521,60 @@ public partial class StackControl : UserControl
     private void OnMouseLeave(object sender, MouseEventArgs e)
     {
         _isHovering = false;
-        _isLongPress = false;
-        // Don't release capture during drag — MouseLeave fires even with capture
-        if (!_isDragging)
-        {
-            ReleaseMouseCapture();
-        }
     }
 
-    private void OnMouseMove(object sender, MouseEventArgs e)
+    // ---- Drag events (ONLY on the white grip bar / DragHandle) ----
+
+    private void OnDragHandleMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.LeftButton != MouseButtonState.Pressed) return;
+        // Only drag when collapsed (expanded state uses the bar area differently)
         if (_isExpanded) return;
 
-        var delta = e.GetPosition(this) - _pressPoint;
+        // IMPORTANT: Use the PARENT CANVAS coordinate space for all drag math, NOT
+        // e.GetPosition(this). GetPosition(this) includes this control's own
+        // RenderTransform (WPF's PointFromScreen accounts for the element's
+        // transform), so once we start translating, each frame's delta would feed
+        // the transform back into itself — the stack would move at ~half the cursor
+        // speed and drift away from the cursor on release. The Canvas has no
+        // transform, so its coordinate space stays stable throughout the drag.
+        if (VisualTreeHelper.GetParent(this) is Canvas canvas)
+        {
+            _dragStartMouse = e.GetPosition(canvas);
+            double l = Canvas.GetLeft(this);
+            double t = Canvas.GetTop(this);
+            _dragStartPos = new Point(
+                double.IsNaN(l) ? 0 : l,
+                double.IsNaN(t) ? 0 : t);
+        }
+        else
+        {
+            _dragStartMouse = new Point(0, 0);
+            _dragStartPos = new Point(0, 0);
+        }
 
-        // Start dragging after moving past the threshold
+        _isDragging = false;
+
+        _dragTransform = new TranslateTransform(0, 0);
+        RenderTransform = _dragTransform;
+        // Capture mouse on the DragHandle ITSELF (not the UserControl). This keeps
+        // the DragHandle's MouseMove binding alive even when the cursor leaves the
+        // small grip bar during a drag — so dragging works smoothly anywhere on
+        // screen. Capturing on the parent UserControl would instead steal events
+        // from the child and break the drag.
+        DragHandle.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void OnDragHandleMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        if (_isExpanded || _dragTransform == null) return;
+        if (VisualTreeHelper.GetParent(this) is not Canvas canvas) return;
+
+        // Delta in CANVAS coordinates (stable, no feedback loop — see OnDragHandleMouseDown)
+        var delta = e.GetPosition(canvas) - _dragStartMouse;
+
+        // Start dragging after moving past threshold
         if (!_isDragging && delta.Length > 3)
         {
             _isDragging = true;
@@ -601,26 +583,64 @@ public partial class StackControl : UserControl
 
         if (_isDragging)
         {
-            // Update cached transform — no per-frame allocation, much smoother
-            if (_dragTransform != null)
-            {
-                _dragTransform.X = delta.X;
-                _dragTransform.Y = delta.Y;
-            }
+            _dragTransform.X = delta.X;
+            _dragTransform.Y = delta.Y;
+        }
+    }
+
+    private void OnDragHandleMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        // Release the mouse capture taken on the DragHandle in OnDragHandleMouseDown
+        if (DragHandle.IsMouseCaptured)
+            DragHandle.ReleaseMouseCapture();
+
+        if (!_isDragging || _dragTransform == null)
+        {
+            // Was a click on the grip bar, not a drag — treat as normal click
+            _isDragging = false;
+            RenderTransform = null;
+            _dragTransform = null;
+            if (!_isExpanded)
+                StackClicked?.Invoke(_groupKey);
             return;
         }
 
-        // Long press (only when NOT dragging)
-        if (!_isLongPress)
+        // Resolve the parent Canvas once (its coord space is stable — no transform)
+        if (VisualTreeHelper.GetParent(this) is not Canvas canvas)
+            return;
+
+        // Commit final position (Canvas coords, same space as the live transform)
+        var offset = e.GetPosition(canvas) - _dragStartMouse;
+        var newLeft = _dragStartPos.X + offset.X;
+        var newTop = _dragStartPos.Y + offset.Y;
+
+        // Snap to grid
+        newLeft = DesktopGrid.SnapX(newLeft);
+        newTop = DesktopGrid.SnapY(newTop);
+
+        // Clamp inside canvas
+        double cw = canvas.ActualWidth;
+        double ch = canvas.ActualHeight;
+        if (cw > 0 && ch > 0)
         {
-            var elapsed = (DateTime.Now - _pressTime).TotalMilliseconds;
-            if (elapsed > 600 && delta.Length < 10)
-            {
-                _isLongPress = true;
-                if (_items.Count > 0)
-                    _items[0].Open();
-            }
+            double maxX = Math.Max(0, cw - this.ActualWidth);
+            double maxY = Math.Max(0, ch - this.ActualHeight);
+            newLeft = Math.Clamp(newLeft, 0, maxX);
+            newTop = Math.Clamp(newTop, 0, maxY);
         }
+
+        Canvas.SetLeft(this, newLeft);
+        Canvas.SetTop(this, newTop);
+        RenderTransform = null;
+        _dragTransform = null;
+        _isDragging = false;
+        IsManuallyPositioned = true;
+
+        var parent = VisualTreeHelper.GetParent(this) as UIElement;
+        parent?.InvalidateVisual();
+
+        DragEnded?.Invoke(this);
+        e.Handled = true;
     }
 
     // ---- Drag & Drop ----
