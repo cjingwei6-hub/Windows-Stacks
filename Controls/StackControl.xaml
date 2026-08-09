@@ -9,7 +9,6 @@
              MouseLeftButtonUp="OnMouseLeftButtonUp"
              MouseEnter="OnMouseEnter"
              MouseLeave="OnMouseLeave"
-             MouseMove="OnMouseMove"
              AllowDrop="True"
              Drop="OnDrop"
              DragEnter="OnDragEnter"
@@ -62,12 +61,16 @@
                 Padding="6,4"
                 RenderOptions.BitmapScalingMode="HighQuality">
             <StackPanel>
-                <!-- Drag handle  -->
-                <Border Width="28" Height="4" CornerRadius="2"
+                <!-- Drag handle — only this area triggers drag; clicking elsewhere expands -->
+                <Border x:Name="DragHandle"
+                        Width="28" Height="4" CornerRadius="2"
                         Background="#50FFFFFF"
                         HorizontalAlignment="Center"
                         Margin="0,0,0,4"
-                        Cursor="SizeAll"/>
+                        Cursor="SizeAll"
+                        MouseLeftButtonDown="OnDragHandleMouseDown"
+                        MouseLeftButtonUp="OnDragHandleMouseUp"
+                        MouseMove="OnDragHandleMouseMove"/>
                 <!-- Icon pile (horizontal strip) -->
                 <StackPanel x:Name="IconPilePanel" Orientation="Horizontal"
                             HorizontalAlignment="Center" Margin="0,0,0,6">
