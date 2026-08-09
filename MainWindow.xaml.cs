@@ -387,7 +387,28 @@ public partial class MainWindow : Window
         int screenY = (short)(lParam.ToInt32() >> 16);
         var pt = new NativePoint { x = screenX, y = screenY };
         ScreenToClient(_hwnd, ref pt);
-        bool overStack = IsPointOverAnyStackControl(new Point(pt.x, pt.y));
+
+        // ScreenToClient returns DEVICE pixels (physical). WPF Canvas/Actual*
+        // are in LOGICAL pixels (DIP). On a 150% DPI screen the two differ by
+        // 1.5×, so a naive comparison makes the WM_NCHITTEST hit-rect 1.5× too
+        // big/small → most clicks miss the stack and fall through to the desktop
+        // ("only the edges respond"). Convert device→logical via the DPI matrix.
+        double dpiX = 1.0, dpiY = 1.0;
+        try
+        {
+            var ps = PresentationSource.FromVisual(this);
+            if (ps?.CompositionTarget != null)
+            {
+                dpiX = ps.CompositionTarget.TransformToDevice.M11;
+                dpiY = ps.CompositionTarget.TransformToDevice.M22;
+            }
+        }
+        catch { }
+        if (dpiX <= 0) dpiX = 1.0;
+        if (dpiY <= 0) dpiY = 1.0;
+
+        var wpfPt = new Point(pt.x / dpiX, pt.y / dpiY);
+        bool overStack = IsPointOverAnyStackControl(wpfPt);
 
         // Cursor over a StackControl → let WPF handle the hit-test
         if (overStack)
@@ -508,11 +529,11 @@ public partial class MainWindow : Window
         var menu = new System.Windows.Forms.ContextMenuStrip();
 
         // ── Slim modern menu: only 3 items ──
-        menu.Items.Add(CreateMenuItem("⚙ 设置", OpenSettings));
+        menu.Items.Add(CreateMenuItem("设置", OpenSettings));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-        menu.Items.Add(CreateMenuItem("ℹ 关于", ShowAbout));
+        menu.Items.Add(CreateMenuItem("关于", ShowAbout));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-        menu.Items.Add(CreateMenuItem("✕ 退出", CleanupAndExit));
+        menu.Items.Add(CreateMenuItem("退出", CleanupAndExit));
 
         _trayIcon.ContextMenuStrip = menu;
     }
@@ -628,6 +649,15 @@ public partial class MainWindow : Window
 
         // Show as a dialog centered on this window (but we're transparent/fullscreen,
         // so CenterOwner will center on screen which is fine)
+        // Intercept minimize → hide to tray (like main window behavior)
+        wnd.StateChanged += (s, e) =>
+        {
+            if (wnd.WindowState == WindowState.Minimized)
+            {
+                wnd.WindowState = WindowState.Normal;
+                wnd.Hide();
+            }
+        };
         try { wnd.ShowDialog(); }
         catch { /* window may already be closing */ }
     }
