@@ -534,7 +534,7 @@ public partial class MainWindow : Window
             ApplySourceChange();
         };
 
-       wnd.OnFolderAdded = (path) =>
+        wnd.OnFolderAdded = (path) =>
         {
             if (!_classifyFolders.Contains(path))
                 _classifyFolders.Add(path);
@@ -595,6 +595,25 @@ public partial class MainWindow : Window
             // Toggle() flips, so the new state is whatever IsEnabled returns now
         };
 
+        // Custom-rule list edits — push to engine + persist
+        wnd.OnCustomRulesChanged = (rules) =>
+        {
+            _settings.CustomRules = rules.ToList();
+            SettingsStore.Save(_settings);
+            _fileManager.SetCustomRules(_settings.CustomRules);
+        };
+
+        // Custom group-name edits — push to engine + persist + rerender stacks
+        wnd.OnCustomGroupNamesChanged = (map) =>
+        {
+            _settings.CustomGroupNames = map.ToDictionary(kv => kv.Key, kv => kv.Value);
+            SettingsStore.Save(_settings);
+            _fileManager.SetCustomGroupNames(_settings.CustomGroupNames);
+            // Render-only update: every StackControl's header text may need to refresh
+            foreach (var (key, stack) in _stacks)
+                stack.UpdateHeader(key, _fileManager.Engine.GetDisplayName(key));
+        };
+
         // Push current state into the window
         wnd.LoadState(
             classifyDesktop: _classifyDesktop,
@@ -603,7 +622,9 @@ public partial class MainWindow : Window
             layout: _settings.Layout,
             sortBy: _settings.SortBy,
             hideApps: _hideApps,
-            autoStart: AutoStartManager.IsEnabled());
+            autoStart: AutoStartManager.IsEnabled(),
+            customGroupNames: _settings.CustomGroupNames,
+            customRules: _settings.CustomRules);
 
         // Show as a dialog centered on this window (but we're transparent/fullscreen,
         // so CenterOwner will center on screen which is fine)

@@ -158,6 +158,31 @@ public class FileManager
         FireGroupsChanged();
     }
 
+    /// <summary>
+    /// Replace the current custom-rules list. Triggers a re-group only if
+    /// the engine is in Custom mode.
+    /// </summary>
+    public void SetCustomRules(IEnumerable<CustomRule> rules)
+    {
+        _engine.CustomRules = rules.ToList();
+        if (_engine.Mode != GroupEngine.GroupMode.Custom) return;
+
+        lock (_lock)
+        {
+            _groups = _engine.Group(_files.Values);
+        }
+        FireGroupsChanged();
+    }
+
+    /// <summary>
+    /// Replace the custom display-name map. Only affects rendering, not
+    /// grouping, so we don't fire GroupsChanged here — caller decides.
+    /// </summary>
+    public void SetCustomGroupNames(Dictionary<string, string> names)
+    {
+        _engine.CustomGroupNames = names ?? new();
+    }
+
     public void SetSortMode(GroupEngine.SortMode sortMode)
     {
         if (_engine.SortBy == sortMode) return;

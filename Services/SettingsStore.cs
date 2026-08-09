@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using Stacks.Models;
 
 namespace Stacks.Services;
 
@@ -38,6 +39,17 @@ public class PositionData
     /// into the same stack view with deduplication by filename.
     /// </summary>
     public List<string> ClassifyFolders { get; set; } = new();
+
+    /// <summary>
+    /// User-defined display names per group key (e.g. "image" -> "图片墙").
+    /// Empty string (or missing entry) means use the built-in default name.
+    /// </summary>
+    public Dictionary<string, string> CustomGroupNames { get; set; } = new();
+
+    /// <summary>
+    /// User-defined classification rules (only consulted in GroupMode.Custom).
+    /// </summary>
+    public List<CustomRule> CustomRules { get; set; } = new();
 
     // ── Legacy field kept for migration from v1.0.x single-folder mode ──
     [Obsolete("Use ClassifyDesktop + ClassifyFolders instead")]

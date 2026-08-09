@@ -98,6 +98,17 @@ public partial class StackControl : UserControl
         IsManuallyPositioned = false;
     }
 
+    /// <summary>
+    /// Refresh header text only (no list rebuild). Used when the user
+    /// edits a custom display name for this group.
+    /// </summary>
+    public void UpdateHeader(string groupKey, string groupName)
+    {
+        _groupKey = groupKey;
+        GroupNameLabel.Text = groupName;
+        ExpandedTitle.Text = groupName;
+    }
+
     private void RenderCollapsedIcons()
     {
         IconPilePanel.Children.Clear();

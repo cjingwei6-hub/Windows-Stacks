@@ -34,17 +34,45 @@ public class GroupEngine
             ExtToGroup[ext] = group;
     }
 
-    public enum GroupMode { Kind, Date, None }
+    public enum GroupMode { Kind, Date, None, Custom }
     public enum SortMode { Name, Date, Size, Type }
 
     public GroupMode Mode { get; set; } = GroupMode.Kind;
     public SortMode SortBy { get; set; } = SortMode.Name;
+
+    /// <summary>
+    /// User-defined classification rules. Each rule gathers its extensions into
+    /// a single stack. Only consulted when Mode == GroupMode.Custom.
+    /// </summary>
+    public List<CustomRule> CustomRules { get; set; } = new();
+
+    /// <summary>
+    /// User-defined display-name overrides keyed by group key. Empty/null = use default.
+    /// </summary>
+    public Dictionary<string, string> CustomGroupNames { get; set; } = new();
+
+    /// <summary>Prefix for all custom-rule group keys (avoids collision with built-in keys).</summary>
+    public const string CustomKeyPrefix = "custom:";
 
     public string Classify(DesktopItem item)
     {
         if (Mode == GroupMode.None) return "all";
         if (Mode == GroupMode.Date) return ClassifyByDate(item);
 
+        // Custom mode: walk rules in order, first match wins
+        if (Mode == GroupMode.Custom)
+        {
+            if (item.IsDirectory) return "folder";
+            if (item.IsHidden) return "other";
+            foreach (var rule in CustomRules)
+            {
+                if (rule.Extensions.Contains(item.Extension))
+                    return CustomKeyPrefix + rule.Id;
+            }
+            return "other";
+        }
+
+        // Kind mode (default)
         if (item.IsDirectory) return "folder";
         if (item.IsHidden) return "other";
 
@@ -125,11 +153,28 @@ public class GroupEngine
     };
 
     public string GetDisplayName(string key) =>
-        GroupNames.GetValueOrDefault(key, key);
+        CustomGroupNames.TryGetValue(key, out var custom)
+            && !string.IsNullOrWhiteSpace(custom)
+            ? custom
+            : GroupNames.GetValueOrDefault(key, key);
 
     public string[] GetOrder() => Mode switch
     {
         GroupMode.Date => DateGroupOrder,
+        GroupMode.Custom => BuildCustomGroupOrder(),
         _ => GroupOrder
     };
+
+    /// <summary>
+    /// Custom-mode ordering: "folder" first, then each user rule in the order
+    /// they were added (always include "other" last as the catch-all).
+    /// </summary>
+    private string[] BuildCustomGroupOrder()
+    {
+        var order = new List<string> { "folder" };
+        foreach (var rule in CustomRules)
+            order.Add(CustomKeyPrefix + rule.Id);
+        order.Add("other");
+        return order.ToArray();
+    }
 }

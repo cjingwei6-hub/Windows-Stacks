@@ -55,7 +55,7 @@
                                 <Setter TargetName="labelTxt" Property="FontWeight" Value="SemiBold"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#20FFFFFFF"/>
+                                <Setter TargetName="bd" Property="Background" Value="#20FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -206,6 +206,45 @@
                 </DockPanel>
             </Border>
         </DataTemplate>
+
+        <!-- ═══ Context menus for custom dropdowns (must live in Resources, NOT in visual tree) ═══ -->
+        <ContextMenu x:Key="GroupModeMenu">
+            <MenuItem Header="按类型" Tag="kind" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+            <MenuItem Header="按日期" Tag="date" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+            <MenuItem Header="不分组" Tag="none" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+            <MenuItem Header="按自定义规则" Tag="custom" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
+        </ContextMenu>
+
+        <ContextMenu x:Key="LayoutMenu">
+            <MenuItem Header="网格" Tag="grid" Style="{DynamicResource DropItem}" Click="LayoutItem_Click"/>
+            <MenuItem Header="扇形" Tag="fan" Style="{DynamicResource DropItem}" Click="LayoutItem_Click"/>
+        </ContextMenu>
+
+        <ContextMenu x:Key="SortModeMenu">
+            <MenuItem Header="按名称" Tag="name" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+            <MenuItem Header="按日期" Tag="date" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+            <MenuItem Header="按大小" Tag="size" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+            <MenuItem Header="按类型" Tag="type" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
+        </ContextMenu>
+
+        <!-- ═══ Custom rule item template ═══ -->
+        <DataTemplate x:Key="CustomRuleTpl">
+            <Border CornerRadius="5" Background="#0A000000" Padding="10,7" Margin="0,3">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock Text="{Binding Name}" FontFamily="Microsoft YaHei UI" FontSize="13"
+                                   FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                                   VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                        <Button Content="✕ 删除" Style="{DynamicResource BtnDanger}"
+                                Click="RemoveCustomRule_Click" Tag="{Binding Id}"
+                                HorizontalAlignment="Right" Padding="6,2"/>
+                    </DockPanel>
+                    <TextBlock Text="{Binding ExtensionsText}" FontFamily="Consolas"
+                               FontSize="11" Foreground="{StaticResource TextMuted}"
+                               Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
     </Window.Resources>
 
     <!-- ═══ Root grid: sidebar + content ═══ -->
@@ -247,6 +286,10 @@
                 <RadioButton GroupName="Nav" Style="{DynamicResource NavItem}"
                              Tag="display" Click="Nav_Click"
                              Content="👁 显示选项" ToolTip="隐藏应用、开机自启"/>
+
+                <RadioButton GroupName="Nav" Style="{DynamicResource NavItem}"
+                             Tag="custom" Click="Nav_Click"
+                             Content="📝 自定义" ToolTip="自定义叠放栏名称和分类规则"/>
 
                 <!-- Spacer -->
                 <Rectangle Height="1" Fill="Transparent" VerticalAlignment="Stretch"/>
@@ -357,7 +400,7 @@
                             <StackPanel Style="{DynamicResource SettingRow}">
                                 <StackPanel>
                                     <TextBlock Text="隐藏应用" Style="{DynamicResource LabelTxt}"/>
-                                    <TextBlock Text="隐藏「应用」类型的叠放组" Style="{DynamicResource DescTxt}"/>
+                                    <TextBlock Text="隐藏「应用」类型的叠放栏" Style="{DynamicResource DescTxt}"/>
                                 </StackPanel>
                                 <Border x:Name="HideAppsToggle" Style="{DynamicResource ToggleStyle}" Tag="Off"
                                         MouseLeftButtonDown="HideAppsToggle_Click" HorizontalAlignment="Right">
@@ -384,6 +427,99 @@
                             HorizontalAlignment="Stretch" Margin="0,16,0,0"
                             Padding="0,11" Click="Refresh_Click"/>
                 </StackPanel>
+
+                <!-- ── Panel 4: Custom (Names + Rules) ── -->
+                <StackPanel x:Name="PanelCustom" Visibility="Collapsed" Margin="24,20,24,12">
+                    <TextBlock Text="自定义" FontFamily="Microsoft YaHei UI" FontSize="17"
+                               FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                               Margin="0,0,0,6"/>
+                    <TextBlock Text="重命名叠放栏、添加专属分类规则" Style="{DynamicResource DescTxt}"
+                               Margin="0,0,0,14"/>
+
+                    <!-- Section A: 叠放栏名称 -->
+                    <Border CornerRadius="8" Background="{StaticResource BgCard}"
+                            BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                            Padding="18,14" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="叠放栏名称" FontFamily="Microsoft YaHei UI"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimary}"/>
+                            <TextBlock Text="留空 = 使用默认名称（如「图像」「文稿」）"
+                                       Style="{DynamicResource DescTxt}" Margin="0,2,0,10"/>
+
+                            <ItemsControl x:Name="GroupNameList" BorderThickness="0" Background="Transparent"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                          MaxHeight="160">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="5" Background="#0A000000" Padding="10,6" Margin="0,2">
+                                            <DockPanel>
+                                                <TextBlock Text="{Binding DefaultName}" FontFamily="Microsoft YaHei UI"
+                                                           FontSize="12" Foreground="{StaticResource TextMuted}"
+                                                           VerticalAlignment="Center" Margin="0,0,10,0"
+                                                           DockPanel.Dock="Left" MinWidth="70"/>
+                                                <TextBox x:Name="GroupNameInput" Tag="{Binding GroupKey}"
+                                                         Text="{Binding CustomName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                         Background="White" BorderBrush="{StaticResource BorderLight}"
+                                                         BorderThickness="1" Padding="6,3" FontSize="12"
+                                                         MaxLength="20"
+                                                         TextChanged="GroupNameInput_TextChanged"/>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section B: 自定义分类规则 -->
+                    <Border CornerRadius="8" Background="{StaticResource BgCard}"
+                            BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                            Padding="18,14">
+                        <StackPanel>
+                            <TextBlock Text="自定义分类规则" FontFamily="Microsoft YaHei UI"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimary}"/>
+                            <TextBlock Text="把任意扩展名归到专属叠放栏（如「工作资料」「设计素材」）"
+                                       Style="{DynamicResource DescTxt}" Margin="0,2,0,10"/>
+
+                            <ItemsControl x:Name="CustomRuleList" BorderThickness="0" Background="Transparent"
+                                          ItemTemplate="{DynamicResource CustomRuleTpl}"
+                                          MaxHeight="160" Margin="0,0,0,10"/>
+
+                            <!-- Add row -->
+                            <Border CornerRadius="5" Background="#100078D4" Padding="10,10">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="名称" FontFamily="Microsoft YaHei UI" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondary}"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"
+                                                   DockPanel.Dock="Left"/>
+                                        <TextBox x:Name="NewRuleName" Background="White"
+                                                 BorderBrush="{StaticResource BorderLight}"
+                                                 BorderThickness="1" Padding="6,3" FontSize="12"
+                                                 MaxLength="16"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,6,0,0">
+                                        <TextBlock Text="扩展名" FontFamily="Microsoft YaHei UI" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondary}"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"
+                                                   DockPanel.Dock="Left"/>
+                                        <TextBox x:Name="NewRuleExts" Background="White"
+                                                 BorderBrush="{StaticResource BorderLight}"
+                                                 BorderThickness="1" Padding="6,3" FontSize="12"/>
+                                    </DockPanel>
+                                    <TextBlock Text="用英文逗号分隔，如: pdf, docx, xlsx"
+                                               FontFamily="Microsoft YaHei UI" FontSize="10"
+                                               Foreground="{StaticResource TextMuted}" Margin="0,4,0,6"/>
+                                    <Button Content="+ 添加规则" Style="{DynamicResource BtnPrimary}"
+                                            HorizontalAlignment="Right" Padding="14,6"
+                                            Click="AddCustomRule_Click"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -396,24 +532,5 @@
                         Click="Close_Click"/>
             </StackPanel>
         </Border>
-
-        <!-- ═══ Context menus for custom dropdowns (inside Grid, don't take layout space) ═══ -->
-        <ContextMenu x:Name="GroupModeMenu" Grid.Row="0" Grid.Column="1" Placement="Bottom">
-            <MenuItem Header="按类型 " Tag="kind" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
-            <MenuItem Header="按日期 " Tag="date" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
-            <MenuItem Header="不分组 " Tag="none" Style="{DynamicResource DropItem}" Click="GroupModeItem_Click"/>
-        </ContextMenu>
-
-        <ContextMenu x:Name="LayoutMenu" Grid.Row="0" Grid.Column="1" Placement="Bottom">
-            <MenuItem Header="网格 " Tag="grid" Style="{DynamicResource DropItem}" Click="LayoutItem_Click"/>
-            <MenuItem Header="扇形 " Tag="fan" Style="{DynamicResource DropItem}" Click="LayoutItem_Click"/>
-        </ContextMenu>
-
-        <ContextMenu x:Name="SortModeMenu" Grid.Row="0" Grid.Column="1" Placement="Bottom">
-            <MenuItem Header="按名称 " Tag="name" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
-            <MenuItem Header="按日期 " Tag="date" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
-            <MenuItem Header="按大小 " Tag="size" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
-            <MenuItem Header="按类型 " Tag="type" Style="{DynamicResource DropItem}" Click="SortModeItem_Click"/>
-        </ContextMenu>
     </Grid>
 </Window>
